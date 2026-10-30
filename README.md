@@ -105,15 +105,15 @@ The architecture aims to isolate individual process failures and recover the aff
 
 🧩 5. System Components
 
-Component| Description
-ECU Brakes| Simulated ECU process responsible for generating heartbeat messages
-ECU Engine| Simulated ECU process responsible for generating heartbeat messages
-ECU Infotainment| Simulated ECU process responsible for generating heartbeat messages
-Watchdog Supervisor| Monitors ECU health and detects heartbeat timeouts
-Recovery Mechanism| Attempts to restart the affected ECU process
-QNX IPC| Provides inter-process communication
-QNX Momentics IDE| Supports development, debugging, and testing
-QNX System Profiler| Helps analyze system execution and thread activity using collected trace data
+Component	Description
+ECU Brakes	Simulated ECU process responsible for generating heartbeat messages
+ECU Engine	Simulated ECU process responsible for generating heartbeat messages
+ECU Infotainment	Simulated ECU process responsible for generating heartbeat messages
+Watchdog Supervisor	Monitors ECU health and detects heartbeat timeouts
+Recovery Mechanism	Attempts to restart the affected ECU process
+QNX IPC	Provides inter-process communication
+QNX Momentics IDE	Supports development, debugging, and testing
+QNX System Profiler	Helps analyze system execution and thread activity using collected trace data
 
 ---
 
@@ -161,10 +161,10 @@ ECU Initialization → Heartbeat Monitoring → Timeout Detection → Failed ECU
 
 The current design uses the following configured timing parameters.
 
-Parameter| Value| Purpose
-Heartbeat Interval| 100 ms| Expected interval between ECU heartbeat messages
-Watchdog Check Interval| 50 ms| Interval between watchdog health checks
-Failure Timeout| 300 ms| Threshold for identifying an unresponsive ECU
+Parameter	Value	      Purpose
+Heartbeat interval	100 ms	      Expected interval between ECU heartbeat messages
+Watchdog check interval	 50 ms	       Interval between watchdog health checks
+Failure timeout	300 ms	       Threshold for identifying an unresponsive ECU
 
 The watchdog calculates the elapsed time since the last heartbeat:
 

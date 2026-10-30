@@ -1,0 +1,129 @@
+# Results
+
+Test results for the **Automotive ECU Watchdog & Recovery Framework** running on QNX Neutrino RTOS 8.0 on a Raspberry Pi 4.
+
+[Back to README](README.md)
+
+---
+
+## Contents
+
+1. [Test Setup](#test-setup)
+2. [Fault Detection and Recovery](#fault-detection-and-recovery)
+3. [Dashboard](#dashboard)
+4. [QNX System Profiler Analysis](#qnx-system-profiler-analysis)
+5. [How to Reproduce the Profiler Trace](#how-to-reproduce-the-profiler-trace)
+
+---
+
+## Test Setup
+
+| Item | Details |
+|---|---|
+| Operating system | QNX Neutrino RTOS 8.0 |
+| Target | Raspberry Pi 4 (4 CPU cores), connected to Momentics over Ethernet |
+| Heartbeat interval | 100 ms |
+| Failure timeout | 300 ms (3 missed heartbeats) |
+| Overrun rule | 3 consecutive cycles above the 30 ms budget |
+| Demo hold | 2 s, display only, **excluded** from all downtime figures |
+
+---
+
+## Fault Detection and Recovery
+
+All values below come from our test runs.
+
+| Metric | Observed |
+|---|---|
+| Crash and deadlock detection time | 300 to 400 ms after the last good heartbeat |
+| Overrun detection time | about 530 ms (3 overrun cycles of 150 ms each) |
+| Process restart duration | 1 to 3 ms |
+| Downtime, from last good beat to first heartbeat of the new process | about 495 to 740 ms |
+| Recovery order in a dual fault | Brakes, then Engine, then Infotainment |
+| Effect on unaffected ECUs | None, their heartbeats continued without a gap |
+
+Detection time varies between 300 and 400 ms because the watchdog checks on a 100 ms tick.
+
+### Scenarios tested
+
+| Scenario | Command | Result |
+|---|---|---|
+| Single crash | `1`, `2`, `3` | Detected, restarted and recovered automatically |
+| Dual fault | `4` | All three recovered in priority order |
+| Deadlock | `h1`, `h2` | Heartbeat stopped, fault detected, ECU restarted |
+| Overrun | `o1`, `o2` | Three overruns counted, fault raised, ECU restarted |
+| Clean shutdown | `q` | Supervisor and ECUs stop cleanly |
+
+### Sample log
+
+![alt text](<Screenshot 2026-10-30 191752.png>)
+
+![alt text](<Screenshot 2026-10-30 191816.png>)
+
+![alt text](<Screenshot 2026-10-30 191833.png>)
+
+![alt text](<Screenshot 2026-10-30 191850.png>)
+
+
+
+---
+
+## Dashboard
+
+The terminal dashboard shows each ECU's status, last cycle time, detection time, restart time and downtime, plus the failure timeline.
+
+<!-- Replace the paths below with your own images -->
+
+![Dashboard](docs/images/dashboard.png)
+
+---
+
+## QNX System Profiler Analysis
+
+A kernel event trace was captured on the Raspberry Pi 4 while the supervisor ran and faults were injected.
+
+### Summary
+
+| Metric | Value |
+|---|---|
+| Trace length | 17.4 s |
+| Trace events captured | 741,143, with 0 dropped buffers |
+| CPU idle | 99.0 % |
+| User time | 0.3 % |
+| Kernel time | 0.7 % |
+
+The whole framework, including the supervisor, three ECUs and dashboard, leaves the system about 99 % idle. A safety monitor should add very little load to the functions it protects.
+
+c:\Users\manya\OneDrive\Pictures\Screenshots\Screenshot 2026-10-31 002146.png
+
+### CPU Usage
+
+CPU load is very low because the supervisor is event-driven. It wakes only on the 100 ms timer pulse or when a heartbeat pulse arrives, and does not poll in a busy loop.
+
+c:\Users\manya\OneDrive\Pictures\Screenshots\Screenshot 2026-10-31 004921.png
+
+### Thread Timeline
+
+Each tick mark is a heartbeat. The `pi_supervisor` row keeps ticking throughout, because it is the watchdog. Engine and Infotainment keep their regular ticks without a gap.
+
+In the Brakes deadlock run, the first `pi_brakes_ecu` row stops ticking when the heartbeat stops. After the supervisor detects the fault and restarts the process, a second `pi_brakes_ecu` row starts ticking. QNX shows the restarted process as a new entry, because it has a new process ID.
+
+c:\Users\manya\OneDrive\Pictures\Screenshots\Screenshot 2026-10-30 231827.png
+
+Normal operation, with all ECUs beating steadily:
+
+
+c:\Users\manya\OneDrive\Pictures\Screenshots\Screenshot 2026-10-30 232440.png
+
+---
+
+## How to Reproduce the Profiler Trace
+
+1. Start the supervisor on the Pi and wait until all three ECUs show **HEALTHY**.
+2. In Momentics, switch to the **QNX System Profiler** perspective.
+3. Choose **Log** with **Kernel Log of** your target, set the save location and click **Log**.
+4. Click inside the supervisor console and inject faults (`1`, `4`, `o2`), a few seconds apart.
+5. Stop the kernel logging session. Momentics then opens the `.kev` trace file.
+6. Use the **Summary**, **CPU Usage** and **Timeline** views to take the screenshots above.
+
+> The Pi must run the instrumented kernel (`procnto-smp-instr`) for kernel logging to work.

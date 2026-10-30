@@ -56,6 +56,12 @@ The framework was built in C on **QNX Neutrino RTOS 8.0** and runs on a **Raspbe
 <img width="792" height="399" alt="image" src="https://github.com/user-attachments/assets/6cae013a-d0fb-4f07-bcd6-cb5686309a97" />
 
 
+
+
+<img width="778" height="471" alt="image" src="https://github.com/user-attachments/assets/e8d31f8b-7d66-4e0f-88ad-f538d8947f05" />
+
+
+
 | Component | Role |
 |---|---|
 | **ECU processes** (Brakes, Engine, Infotainment) | Separate processes that do periodic work and send a heartbeat every 100 ms |

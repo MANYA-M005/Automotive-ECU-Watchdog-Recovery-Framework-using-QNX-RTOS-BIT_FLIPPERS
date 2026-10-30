@@ -1,306 +1,215 @@
-🚗 Automotive ECU Watchdog & Recovery Framework 
+# Automotive ECU Watchdog & Recovery Framework
 
-Team Name: Bit-Flippers
-Project Domain: Automotive 
-Platform: QNX Neutrino RTOS
-Programming Language: C
+**Real-time fault detection and priority-based recovery for simulated automotive ECUs on QNX Neutrino RTOS**
 
----
+![QNX](https://img.shields.io/badge/RTOS-QNX%20Neutrino%208.0-blue)
+![Platform](https://img.shields.io/badge/Target-Raspberry%20Pi%204-c51a4a)
+![Language](https://img.shields.io/badge/Language-C-informational)
 
-📌 1. Project Overview
-
-Modern automotive systems rely on multiple Electronic Control Units (ECUs) to perform different functions, including braking, engine management, and infotainment. The failure or unresponsiveness of an ECU can interrupt its associated service and affect the overall system's reliability.
-
-The Automotive ECU Watchdog & Recovery Framework aims to address this challenge through continuous monitoring of individual ECU processes, heartbeat-based failure detection, and targeted process recovery.
-
-The framework uses QNX Neutrino RTOS to simulate multiple independent ECU processes and a watchdog supervisor. Each ECU periodically sends heartbeat messages to indicate that it is communicating with the supervisor.
-
-The watchdog tracks heartbeat reception and identifies an ECU as unresponsive when the configured timeout is exceeded. It then attempts to restart the affected ECU process and verifies whether heartbeat communication resumes.
-
-The project demonstrates a modular approach to process-level fault detection and recovery in an automotive embedded software environment.
+**Team:** Bit-Flippers  |  **Event:** QNX-eHACK 2026  |  **Domain:** Automotive Embedded Systems & Real-Time Operating Systems
 
 ---
 
-⚠️ 2. Problem Statement
+## Table of Contents
 
-Automotive systems depend on multiple ECUs operating reliably and coordinating their respective functions. When an ECU crashes, hangs, or becomes unresponsive, its service may be interrupted.
-
-Without continuous monitoring and an effective recovery mechanism, such failures may remain undetected, delaying service restoration.
-
-Restarting the entire system to recover a single failed process may also cause unnecessary disruption to other services.
-
-Therefore, an automotive ECU watchdog and recovery framework is needed to:
-
-- Monitor the health of multiple ECU processes.
-- Detect unresponsive processes using heartbeat monitoring.
-- Identify failures within a defined timeout.
-- Attempt recovery of the affected ECU process.
-- Verify whether the recovered process resumes normal communication.
-- Minimize unnecessary disruption to unaffected processes.
-- Support performance evaluation through timing measurements and system logs.
+1. [Overview](#overview)
+2. [Key Features](#key-features)
+3. [System Architecture](#system-architecture)
+4. [How It Works](#how-it-works)
+5. [Timing and Scheduling](#timing-and-scheduling)
+6. [Fault Injection](#fault-injection)
+7. [Results](RESULTS.md)
+8. [Build and Run](#build-and-run)
+9. [Repository Structure](#repository-structure)
+10. [Limitations](#limitations)
+11. [Future Scope](#future-scope)
+12. [Team](#team)
 
 ---
 
-🎯 3. Project Objectives
+## Overview
 
-The main objectives of this project are:
+Modern vehicles depend on many Electronic Control Units (ECUs) for braking, engine management, infotainment and more. When one ECU crashes, hangs, or runs too slowly, its service is interrupted, and restarting the whole system to fix a single process disrupts everything else.
 
-1. Develop a framework for monitoring multiple simulated ECU processes.
-2. Implement heartbeat-based health monitoring using QNX inter-process communication.
-3. Detect ECU unresponsiveness using timeout-based logic.
-4. Implement targeted recovery by attempting to restart the affected ECU process.
-5. Verify recovery by checking for subsequent heartbeat messages.
-6. Evaluate the framework under normal and fault-injection scenarios.
-7. Analyze process execution and timing behavior using QNX development tools.
+This project implements a **watchdog supervisor** that monitors several independent ECU processes, detects failures through heartbeats, and restarts only the affected ECU. Safety-critical ECUs are recovered first. Unaffected ECUs keep running without interruption.
+
+The framework was built in C on **QNX Neutrino RTOS 8.0** and runs on a **Raspberry Pi 4**. It uses QNX process isolation, pulse-based IPC, POSIX timers and real-time scheduling.
 
 ---
 
-🏗️ 4. Proposed System Architecture
+## Key Features
 
-The proposed architecture consists of three simulated ECU processes and a watchdog supervisor.
-
-Block Diagram
-
-
-
-<img width="792" height="399" alt="image" src="https://github.com/user-attachments/assets/bc9c8d07-b47a-458a-845b-a764e63ff8c0" />
-
-
-
-
-
-
-
-
-
-
-
-<img width="778" height="471" alt="image" src="https://github.com/user-attachments/assets/86844163-7484-42fa-8207-515421bbc2f2" />
-
-
-
-ECU Processes
-
-- ECU Brakes: Simulates a braking-related controller.
-- ECU Engine: Simulates an engine-management controller.
-- ECU Infotainment: Simulates an infotainment controller.
-
-Watchdog Supervisor
-
-The watchdog supervisor monitors the health of the ECU processes by receiving heartbeat messages and tracking their latest reception timestamps.
-
-When an ECU exceeds the configured heartbeat timeout, the supervisor identifies the affected process and initiates the recovery procedure.
-
-Recovery Mechanism
-
-The recovery mechanism attempts to restart the affected ECU process. Following the restart attempt, the framework checks whether the process resumes sending heartbeat messages.
-
-Communication
-
-QNX inter-process communication (IPC) supports communication between the ECU processes and the watchdog supervisor.
-
-The architecture aims to isolate individual process failures and recover the affected service without unnecessarily restarting the entire operating system.
+- **Heartbeat-based monitoring** of three simulated ECUs (Brakes, Engine, Infotainment) using QNX pulses
+- **Three fault types detected:** process crash, deadlock (heartbeat stops while the process is alive) and execution overrun (cycle exceeds its time budget)
+- **Targeted recovery:** only the failed ECU is restarted, other ECUs are not disturbed
+- **Priority-based restart order:** Brakes, then Engine, then Infotainment, including when all three fail together
+- **Live terminal dashboard** with status, cycle time, detection time, restart time and downtime
+- **Failure timeline** on screen and logged to `/tmp/ecu_timeline.log`
+- **Real-time scheduling:** the watchdog runs at a higher priority than every ECU, so it can always react
+- **Built-in fault injection** from the keyboard for live demonstrations
 
 ---
 
-🧩 5. System Components
+## System Architecture
 
-Component	Description
-ECU Brakes	Simulated ECU process responsible for generating heartbeat messages
-ECU Engine	Simulated ECU process responsible for generating heartbeat messages
-ECU Infotainment	Simulated ECU process responsible for generating heartbeat messages
-Watchdog Supervisor	Monitors ECU health and detects heartbeat timeouts
-Recovery Mechanism	Attempts to restart the affected ECU process
-QNX IPC	Provides inter-process communication
-QNX Momentics IDE	Supports development, debugging, and testing
-QNX System Profiler	Helps analyze system execution and thread activity using collected trace data
 
----
+<img width="792" height="399" alt="image" src="https://github.com/user-attachments/assets/6cae013a-d0fb-4f07-bcd6-cb5686309a97" />
 
-⚙️ 6. Working Principle
 
-The framework operates through the following stages.
-
-Step 1: ECU Initialization
-
-The simulated ECU processes and watchdog supervisor are started in the QNX environment.
-
-Step 2: Heartbeat Generation
-
-Each ECU periodically sends heartbeat messages to the watchdog supervisor to indicate that it is communicating.
-
-Step 3: Health Monitoring
-
-The watchdog receives heartbeat messages and records the latest heartbeat information for each ECU.
-
-Step 4: Failure Detection
-
-The watchdog periodically checks the elapsed time since each ECU's last heartbeat.
-
-If the elapsed time exceeds the configured failure timeout, the corresponding ECU is marked as unresponsive.
-
-Step 5: Targeted Recovery
-
-The supervisor identifies the affected ECU and attempts to restart its process.
-
-Step 6: Recovery Verification
-
-The supervisor checks whether the restarted process resumes sending heartbeat messages.
-
-Step 7: Logging and Evaluation
-
-Failure-detection and recovery information is recorded for debugging and performance evaluation, depending on the logging implemented.
-
-🔄 Overall Workflow
-
-ECU Initialization → Heartbeat Monitoring → Timeout Detection → Failed ECU Identification → Recovery Attempt → Heartbeat Verification → Status Logging
+| Component | Role |
+|---|---|
+| **ECU processes** (Brakes, Engine, Infotainment) | Separate processes that do periodic work and send a heartbeat every 100 ms |
+| **Watchdog** (main thread) | Receives heartbeat pulses and a 100 ms timer pulse, and decides when an ECU has failed |
+| **Recovery Manager** | Restarts failed ECUs in priority order, then verifies recovery |
+| **Health Monitor** | Draws the dashboard and the failure timeline |
+| **Fault Injection** | Lets the operator crash, deadlock or overrun any ECU from the keyboard |
+| **QNX IPC (pulses)** | Carries heartbeats, the ECU id, instance number and last cycle time |
 
 ---
 
-⏱️ 7. Heartbeat Monitoring and Timing Configuration
+## How It Works
 
-The current design uses the following configured timing parameters.
-
-Parameter	Value	      Purpose
-Heartbeat interval	100 ms	      Expected interval between ECU heartbeat messages
-Watchdog check interval	 50 ms	       Interval between watchdog health checks
-Failure timeout	300 ms	       Threshold for identifying an unresponsive ECU
-
-The watchdog calculates the elapsed time since the last heartbeat:
-
-Elapsed Time = Current Time − Last Heartbeat Time
-
-When the configured timeout condition is met, the supervisor identifies the corresponding ECU as unresponsive and initiates the recovery procedure.
-
-The actual failure-detection time depends on heartbeat timing, watchdog scheduling, and the timeout comparison used in the implementation.
+1. **Start-up.** The supervisor creates a named channel and spawns the three ECU processes.
+2. **Heartbeats.** Each ECU sends a pulse every 100 ms carrying its ID, instance number and the execution time of its last cycle.
+3. **Monitoring.** A POSIX timer ticks every 100 ms. If an ECU did not send a heartbeat since the last tick, its missed-beat counter increases.
+4. **Detection.** The ECU is declared failed in one of two ways:
+   - **3 missed heartbeats (300 ms timeout):** covers crashes and deadlocks
+   - **3 consecutive cycles over the 30 ms budget:** covers execution overruns
+5. **Recovery.** The Recovery Manager waits a short settling window to collect simultaneous failures, then restarts failed ECUs **in priority order**.
+6. **Verification.** An ECU is only marked recovered when its **first heartbeat from the new process** arrives. Heartbeats from older instances are ignored.
+7. **Logging.** Every event is shown on the dashboard and written to `/tmp/ecu_timeline.log`.
 
 ---
 
-🛡️ 8. Fault Detection and Recovery Strategy
+## Timing and Scheduling
 
-The framework can be evaluated by introducing faults into the simulated ECU processes.
+### Configuration
 
-A failure scenario may involve stopping heartbeat generation or terminating an ECU process.
+| Parameter | Value | Purpose |
+|---|---|---|
+| Heartbeat interval | 100 ms | Period of each ECU cycle and heartbeat |
+| Watchdog tick | 100 ms | Timer pulse used to check for missed heartbeats |
+| Failure timeout | 300 ms (3 missed beats) | Threshold for declaring an ECU unresponsive |
+| Overrun budget | 30 ms per cycle | Maximum allowed execution time of one cycle |
+| Overrun limit | 3 consecutive cycles | Overruns tolerated before a restart |
+| Settling window | 200 ms | Collects simultaneous failures before ordering recovery |
 
-When the watchdog detects that the heartbeat timeout has been exceeded, it identifies the affected ECU and attempts to restart that process.
+### Thread and process priorities
 
-The framework then checks whether heartbeat communication resumes.
+| Task | Policy | Priority |
+|---|---|---|
+| Watchdog (main thread) | SCHED_FIFO | 50 |
+| Recovery Manager | SCHED_FIFO | 50 |
+| Health Monitor (dashboard) | SCHED_FIFO | 30 |
+| Fault injection input | SCHED_FIFO | 10 |
+| Brakes ECU | SCHED_RR | 20 |
+| Engine ECU | SCHED_RR | 15 |
+| Infotainment ECU | SCHED_RR | 10 |
 
-The recovery strategy focuses on the following goals:
-
-- Detect failures through heartbeat monitoring.
-- Identify the affected ECU process.
-- Attempt targeted process recovery.
-- Verify recovery through subsequent heartbeat messages.
-- Check whether unaffected ECU processes continue operating.
-
-The effectiveness of these mechanisms must be verified using the actual simulation output and test logs.
-
----
-
-🧪 9. Simulation and Implementation
-
-The framework is developed in C using the QNX Neutrino RTOS environment.
-
-The implementation is designed around separate ECU processes and a watchdog supervisor.
-
-The simulation can be evaluated through the following scenarios:
-
-Scenario| Description
-1. Normal Operation| All configured ECU processes run and periodically send heartbeat messages to the watchdog.
-2. ECU Failure| One ECU becomes unresponsive or stops sending heartbeats.
-3. Failure Detection| The watchdog identifies the ECU whose heartbeat timeout has been exceeded.
-4. Recovery Attempt| The recovery mechanism attempts to restart the affected ECU process.
-5. Recovery Verification| The framework checks whether the affected ECU resumes heartbeat communication.
-6. System Monitoring| QNX Momentics tools can be used to examine execution activity and timing behavior.
+Shared state is protected with a priority-inheritance mutex to avoid priority inversion.
 
 ---
 
-📊 10. Performance Evaluation
+## Fault Injection
 
-The framework can be evaluated using the following metrics.
+Type a command in the supervisor console and press **Enter**.
 
-Metric| Purpose
-Failure Detection Time| Measures the time required to identify an unresponsive ECU
-Process Restart Duration| Measures the duration of the restart operation
-Total Recovery Time| Measures the time from a defined failure event to a defined recovery endpoint
-Restart Success Rate| Measures how often restart attempts successfully restore the service
-Heartbeat Recovery| Checks whether the restarted ECU resumes communication
-Process Continuity| Checks whether unaffected ECU processes continue operating
-CPU Usage| Helps evaluate resource consumption during monitoring and recovery
-
-Performance results should be calculated from actual measurements and logs.
-
-For meaningful comparison, the measurement boundaries should be clearly defined. For example, total recovery time may be measured from fault injection until the first valid heartbeat from the restarted ECU.
-
-Configured timing parameters, target values, and experimentally measured results should be reported separately.
+| Command | Fault | What it demonstrates |
+|---|---|---|
+| `1` / `2` / `3` | **Crash** Brakes / Engine / Infotainment (process killed) | Detection by missed heartbeats, then automatic restart |
+| `4` | **Dual fault:** all three ECUs crash together | Priority-based recovery order |
+| `h1` / `h2` / `h3` | **Deadlock** the chosen ECU (process alive, heartbeat stops) | Detects hangs that a simple "is the process alive" check would miss |
+| `o1` / `o2` / `o3` | **Overrun:** cycles take 150 ms against a 30 ms budget | Timing-fault detection with a 3-strike rule |
+| `q` | Quit the supervisor | Clean shutdown |
 
 ---
 
-💻 11. Technologies Used
+## Results
 
-- C Programming Language: Implementation of the simulated ECU processes and monitoring logic.
-- QNX Neutrino RTOS: Real-time operating-system environment.
-- QNX Momentics IDE: Development, debugging, and analysis.
-- QNX IPC: Communication between separate processes.
-- QNX System Profiler: Analysis of execution activity and timing behavior.
-- VMware Workstation: Virtualized development environment, if used in the current setup.
+Measured detection and recovery times, CPU usage from the QNX System Profiler, the thread timeline and all screenshots are in **[RESULTS.md](RESULTS.md)**.
 
----
-
-✨ 12. Advantages
-
-- Enables monitoring of multiple simulated ECU processes.
-- Detects missing heartbeats through timeout-based logic.
-- Supports identification of the affected ECU.
-- Attempts process-specific recovery.
-- Provides a mechanism for checking whether heartbeat communication resumes.
-- Supports fault-injection testing.
-- Enables timing and execution analysis through QNX development tools.
-- Provides a modular foundation for extending the framework.
+| Highlight | Value |
+|---|---|
+| Crash and deadlock detection | 300 to 400 ms |
+| Process restart | 1 to 3 ms |
+| System CPU idle during the run | about 99 % |
 
 ---
 
-⚠️ 13. Limitations
+## Build and Run
 
-- The current implementation focuses on simulated ECU processes.
-- A missing heartbeat does not necessarily mean that an ECU has crashed.
-- Recovery success depends on process restart and initialization behavior.
-- Process isolation does not guarantee that every failure is contained.
-- A watchdog failure may interrupt the monitoring mechanism.
-- Real-time performance claims require experimental measurements.
-- The prototype is not a certified automotive safety system.
+### Requirements
 
----
+- QNX Software Center with **QNX Neutrino RTOS 8.0** and **QNX Momentics IDE**
+- Raspberry Pi 4 running a QNX image, connected to Momentics over Ethernet
+- Root access on the target (needed for real-time priorities)
 
-🚀 14. Future Scope
+### Steps
 
-The framework can be extended in the following ways:
+1. **Import** the four projects into Momentics: the supervisor and the three ECU projects.
+2. **Set the ECU identity.** All three ECUs use the same source file. Only these three lines change:
 
-1. Hardware Integration: Extend the framework to supported physical hardware platforms.
-2. Advanced Fault Injection: Test crashes, hangs, missed heartbeats, and repeated failures.
-3. Enhanced Recovery: Investigate QNX High Availability Manager for additional monitoring and recovery mechanisms.
-4. Resource Management: Evaluate CPU affinity, CPU sets, and real-time scheduling priorities.
-5. Scalability: Add more ECU processes and diagnostic interfaces.
-6. Performance Analysis: Measure detection latency, restart duration, recovery success rate, and system availability.
-7. Repeated-Failure Management: Investigate restart limits, backoff strategies, and fault escalation.
+   | ECU | `ECU_NAME` | `ECU_ID` | `ECU_PRIO` |
+   |---|---|---|---|
+   | Brakes | `"Brakes ECU"` | `0` | `20` |
+   | Engine | `"Engine ECU"` | `1` | `15` |
+   | Infotainment | `"Infotainment ECU"` | `2` | `10` |
 
----
+3. **Build** all four projects for the **AArch64 little-endian** target.
+4. **Deploy** the three ECU binaries to `/tmp` on the Pi. The supervisor starts them from the paths in its `ecu[]` table, so these must match your file names:
 
-🏁 15. Conclusion
+   ```c
+   { .name = "Brakes ECU",       .prio = 1, .path = "/tmp/pi_brakes_ecu" },
+   { .name = "Engine ECU",       .prio = 2, .path = "/tmp/pi_engine_ecu" },
+   { .name = "Infotainment ECU", .prio = 3, .path = "/tmp/pi_infotainment_ecu" },
+   ```
 
-The Automotive ECU Watchdog & Recovery Framework demonstrates an approach to monitoring and recovering simulated automotive ECU processes in a QNX-based environment.
+5. **Run** the supervisor on the target (from Momentics or over `ssh`). It starts all three ECUs and shows the dashboard.
+6. **Inject faults** with the commands in the table above.
 
-The framework uses heartbeat messages and timeout-based logic to identify unresponsive processes. It then attempts to restart the affected process and verify whether heartbeat communication resumes.
-
-By focusing on targeted process recovery, the project aims to reduce unnecessary disruption when an individual simulated ECU fails.
-
-The framework provides a foundation for further development in automotive embedded systems, including hardware integration, enhanced fault recovery, and systematic performance evaluation.
+> **Console tip:** set `PLAIN_CONSOLE` to `1` in the supervisor if you run inside the Momentics console. Set it to `0` in an ssh terminal to get colours and in-place redraw.
 
 ---
 
-<p align="center">👥 Team Bit-Flippers
+## Repository Structure
 
-🚗 Automotive Embedded Systems | QNX Neutrino RTOS | C Programming
+```text
+.
+├── pi_supervisor/        Watchdog supervisor (watchdog, recovery, dashboard, fault injection)
+├── pi_brakes_ecu/        Brakes ECU process
+├── pi_engine_ecu/        Engine ECU process
+├── pi_infotainment_ecu/  Infotainment ECU process
+├── docs/images/          Screenshots used in RESULTS.md
+├── RESULTS.md            Measurements, profiler output and screenshots
+└── README.md
+```
 
-</p>
+Adjust the names above to match your repository.
+
+---
+
+## Limitations
+
+- The ECUs are **simulated processes**, not real automotive hardware or software.
+- A missing heartbeat does not always mean a crash. The framework treats crashes, deadlocks and long stalls the same way.
+- Detection time depends on the 100 ms tick, so it varies between 300 and 400 ms.
+- Recovery depends on the ECU being able to restart and initialise cleanly.
+- If the supervisor itself fails, monitoring stops.
+- The 2 s demo hold is for display only. Set `DEMO_HOLD_MS` to `0` to get raw timing.
+- This is a prototype, **not a certified automotive safety system**.
+
+---
+
+## Future Scope
+
+- Integrate real hardware: GPIO status LEDs, buttons and physical sensors on the Raspberry Pi
+- Escalate to a fail-safe mode after repeated failed restarts, with a restart limit and back-off
+- Add a persistent black-box event log
+- Add health scoring and predictive warnings from heartbeat lateness
+- Monitor the watchdog itself with a self-check or hardware watchdog
+- Investigate the QNX High Availability Manager for additional recovery options
+- Scale to more ECUs and add diagnostic interfaces
+- Evaluate CPU affinity and partitioning for stronger isolation
+
+
+Built for **QNX-eHACK 2026**.

@@ -60,6 +60,9 @@ The main objectives of this project are:
 The proposed architecture consists of three simulated ECU processes and a watchdog supervisor.
 
 Block Diagram
+
+
+
 <img width="792" height="399" alt="image" src="https://github.com/user-attachments/assets/bc9c8d07-b47a-458a-845b-a764e63ff8c0" />
 
 

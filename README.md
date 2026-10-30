@@ -63,6 +63,9 @@ Block Diagram
 <img width="792" height="399" alt="image" src="https://github.com/user-attachments/assets/bc9c8d07-b47a-458a-845b-a764e63ff8c0" />
 
 
+
+
+
 <img width="778" height="471" alt="image" src="https://github.com/user-attachments/assets/86844163-7484-42fa-8207-515421bbc2f2" />
 
 

@@ -1,4 +1,4 @@
-# Automotive ECU Watchdog & Recovery Framework
+<img width="1908" height="982" alt="Screenshot 2026-10-30 191752" src="https://github.com/user-attachments/assets/d8c51d28-c895-4192-92fa-b34666af42eb" /># Automotive ECU Watchdog & Recovery Framework
 
 **Real-time fault detection and priority-based recovery for simulated automotive ECUs on QNX Neutrino RTOS**
 
@@ -177,6 +177,18 @@ Measured detection and recovery times, CPU usage from the QNX System Profiler, t
 
 ---
 
+Console Outputs : 
+
+<img width="1908" height="982" alt="Screenshot 2026-10-30 191752 - Copy" src="https://github.com/user-attachments/assets/6bd29d39-a6a9-4d00-86d2-5e2e632b0554" />
+
+<img width="1917" height="985" alt="Screenshot 2026-10-30 191816" src="https://github.com/user-attachments/assets/4f55eb12-27b1-4491-ad73-096f55cddd2e" />
+
+<img width="1916" height="972" alt="Screenshot 2026-10-30 191833" src="https://github.com/user-attachments/assets/5c8cd0d2-b960-4c9a-9dea-f769f86899ed" />
+
+![Uploading Screenshot 2026-10-30 191850.png…]()
+
+
+
 ## Repository Structure
 
 ```text
@@ -193,6 +205,16 @@ Measured detection and recovery times, CPU usage from the QNX System Profiler, t
 Adjust the names above to match your repository.
 
 ---
+
+system profiler :
+
+<img width="1911" height="1001" alt="Screenshot 2026-10-31 000517" src="https://github.com/user-attachments/assets/7e0da324-20f3-4cb2-800f-ab8fa5aa5bbe" />
+
+Thread Timeline :
+
+<img width="1912" height="998" alt="Screenshot 2026-10-30 231827" src="https://github.com/user-attachments/assets/da795b6e-5ed1-4624-a3c7-d9faecb25bb9" />
+
+
 
 ## Limitations
 
